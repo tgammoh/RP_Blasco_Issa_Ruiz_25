@@ -77,7 +77,7 @@ python game.py
 
 > [!NOTE]
 > **No external sound files or asset folders required!**  
-> All audio effects (magical star-beams, squishy monster hits, shoe pickups, and hurt sounds) are synthesized procedurally in memory via Python's standard `wave` and `math` libraries.
+> All audio effects (magical heart arrows, monster hits, shoe pickups, dimension portal warps, and hurt sounds) are synthesized procedurally in memory via Python's standard `wave` and `math` libraries.
 
 ---
 
