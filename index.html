@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E.C.H.O.-7 // Social Robot Voice Terminal</title>
+    <style>
+        :root {
+            --neon-green: #00ff66;
+            --neon-dim: #008f39;
+            --neon-alert: #ff3366;
+            --neon-cyan: #00f0ff;
+            --neon-glow: rgba(0, 255, 102, 0.45);
+            --bg-dark: #070b09;
+            --panel-bg: rgba(2, 22, 10, 0.9);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--neon-green);
+            font-family: 'Courier New', 'Consolas', monospace;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            position: relative;
+            padding: 20px;
+        }
+
+        /* CRT Scanline Overlay */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 255, 0, 0.03));
+            z-index: 20;
+            background-size: 100% 3px, 6px 100%;
+            pointer-events: none;
+        }
+
+        /* CRT Screen Edge Vignette */
+        body::after {
+            content: " ";
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: radial-gradient(circle at center, transparent 60%, rgba(0, 0, 0, 0.9) 100%);
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .terminal-container {
+            width: 100%;
+            max-width: 880px;
+            background: var(--panel-bg);
+            border: 1px solid var(--neon-green);
+            box-shadow: 0 0 35px var(--neon-glow), inset 0 0 25px rgba(0, 255, 102, 0.12);
+            border-radius: 8px;
+            overflow: hidden;
+            z-index: 5;
+            backdrop-filter: blur(6px);
+        }
+
+        .terminal-header {
+            background: rgba(0, 35, 16, 0.95);
+            border-bottom: 1px solid var(--neon-green);
+            padding: 12px 18px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: bold;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--neon-green);
+            box-shadow: 0 0 10px var(--neon-green);
+            animation: pulse-dot 1.5s infinite ease-in-out;
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 0.5; transform: scale(0.9); }
+            50% { opacity: 1; transform: scale(1.15); }
+        }
+
+        .terminal-body {
+            padding: 24px 28px;
+        }
+
+        /* ========================================================
+           LIVELY ANIMATED ROBOT AVATAR STYLING
+           ======================================================== */
+        .robot-stage {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            border: 1px dashed var(--neon-dim);
+            padding: 20px;
+            background: rgba(0, 15, 6, 0.6);
+            border-radius: 6px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .robot-stage:hover .antenna-beacon {
+            transform: scale(1.3);
+            box-shadow: 0 0 20px #ffffff, 0 0 35px var(--neon-green);
+        }
+
+        /* Subtle Hover Physics */
+        .robot-character {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: robotHover 3s infinite ease-in-out;
+            position: relative;
+        }
+
+        @keyframes robotHover {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Head Structure */
+        .robot-head {
+            width: 180px;
+            height: 125px;
+            background: linear-gradient(180deg, #0d2c1c 0%, #06190f 100%);
+            border: 2px solid var(--neon-green);
+            border-radius: 35px 35px 25px 25px;
+            box-shadow: 0 0 20px var(--neon-glow);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.15s ease-out;
+            z-index: 2;
+        }
+
+        /* Antenna on top */
+        .robot-antenna {
+            position: absolute;
+            top: -26px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .antenna-rod {
+            width: 3px;
+            height: 18px;
+            background: var(--neon-green);
+            box-shadow: 0 0 6px var(--neon-green);
+        }
+
+        .antenna-beacon {
+            width: 12px;
+            height: 12px;
+            background: #ffffff;
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--neon-green), 0 0 20px var(--neon-green);
+            animation: beaconPulse 1.8s infinite alternate ease-in-out;
+            transition: all 0.2s;
+        }
+
+        @keyframes beaconPulse {
+            0% { opacity: 0.6; transform: scale(0.9); }
+            100% { opacity: 1; transform: scale(1.15); box-shadow: 0 0 15px #00ff66, 0 0 25px #00ff66; }
+        }
+
+        /* Cyber Ear Pods */
+        .ear-pod {
+            position: absolute;
+            top: 38px;
+            width: 14px;
+            height: 42px;
+            background: #04140b;
+            border: 2px solid var(--neon-green);
+            box-shadow: 0 0 10px var(--neon-glow);
+        }
+
+        .ear-left {
+            left: -14px;
+            border-radius: 8px 0 0 8px;
+        }
+
+        .ear-right {
+            right: -14px;
+            border-radius: 0 8px 8px 0;
+        }
+
+        /* Visor Glass Screen */
+        .robot-visor {
+            width: 146px;
+            height: 76px;
+            background: #020704;
+            border: 1px solid #00aa44;
+            border-radius: 18px;
+            box-shadow: inset 0 0 12px rgba(0, 255, 102, 0.4);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Eyes Container */
+        .visor-eyes {
+            display: flex;
+            gap: 28px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .eye-socket {
+            width: 32px;
+            height: 32px;
+            background: rgba(0, 40, 18, 0.5);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+
+        /* The glowing animated pupil */
+        .eye-pupil {
+            width: 22px;
+            height: 22px;
+            background: var(--neon-green);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--neon-green), 0 0 20px var(--neon-green);
+            position: relative;
+            transition: transform 0.08s ease-out, border-radius 0.2s ease, width 0.2s ease, height 0.2s ease;
+        }
+
+        /* Eyelid for blinking */
+        .eyelid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 0%;
+            background: #020704;
+            z-index: 5;
+            transition: height 0.08s ease-in-out;
+        }
+
+        /* Blinking state */
+        .eye-socket.blink .eyelid {
+            height: 100%;
+        }
+
+        /* Happy expression */
+        .eye-socket.happy .eye-pupil {
+            border-radius: 50% 50% 0 0;
+            height: 14px;
+            transform: translateY(4px);
+        }
+
+        /* Amused / laughing expression */
+        .eye-socket.laugh .eye-pupil {
+            clip-path: polygon(0% 20%, 60% 50%, 0% 80%, 20% 100%, 100% 50%, 20% 0%);
+            border-radius: 0;
+            width: 20px;
+        }
+
+        /* Digital Mouth (Audio Waveform reactive) */
+        .robot-mouth {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            height: 10px;
+        }
+
+        .mouth-bar {
+            width: 4px;
+            height: 3px;
+            background: var(--neon-green);
+            border-radius: 2px;
+            box-shadow: 0 0 5px var(--neon-green);
+            transition: height 0.08s ease;
+        }
+
+        /* Body & Thrusters */
+        .robot-body {
+            width: 90px;
+            height: 48px;
+            background: linear-gradient(180deg, #092014 0%, #040e08 100%);
+            border: 2px solid var(--neon-green);
+            border-radius: 12px 12px 18px 18px;
+            margin-top: -6px;
+            box-shadow: 0 0 15px var(--neon-glow);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+        }
+
+        .chest-core {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #00f0ff;
+            box-shadow: 0 0 10px #00f0ff, 0 0 20px #00f0ff;
+            animation: corePulse 2s infinite alternate;
+        }
+
+        @keyframes corePulse {
+            0% { transform: scale(0.85); opacity: 0.7; }
+            100% { transform: scale(1.15); opacity: 1; }
+        }
+
+        /* Thruster Jet Flame */
+        .thruster-plume {
+            width: 22px;
+            height: 14px;
+            background: linear-gradient(180deg, #00ffff 0%, var(--neon-green) 60%, transparent 100%);
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 0 12px #00ffff, 0 0 20px var(--neon-green);
+            animation: plumeFlicker 0.2s infinite alternate;
+        }
+
+        @keyframes plumeFlicker {
+            0% { transform: scaleY(0.9) scaleX(0.95); opacity: 0.8; }
+            100% { transform: scaleY(1.2) scaleX(1.05); opacity: 1; }
+        }
+
+        .avatar-hint {
+            font-size: 0.75rem;
+            color: var(--neon-dim);
+            margin-top: 14px;
+            letter-spacing: 1px;
+        }
+
+        /* ========================================================
+           VOICE CONTROLS & GAME BUTTON
+           ======================================================== */
+        .action-row-main {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            margin: 20px 0;
+        }
+
+        .mic-btn {
+            background: rgba(0, 40, 18, 0.7);
+            color: var(--neon-green);
+            border: 2px solid var(--neon-green);
+            padding: 14px 26px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            font-weight: bold;
+            letter-spacing: 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            box-shadow: 0 0 15px var(--neon-glow);
+            transition: all 0.25s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .mic-btn:hover {
+            background: var(--neon-green);
+            color: var(--bg-dark);
+            box-shadow: 0 0 30px var(--neon-green);
+        }
+
+        .mic-btn.active {
+            border-color: #ff3366;
+            color: #ff3366;
+            box-shadow: 0 0 25px rgba(255, 51, 102, 0.6);
+            animation: pulse-mic 1s infinite alternate;
+        }
+
+        @keyframes pulse-mic {
+            0% { transform: scale(1); }
+            100% { transform: scale(1.04); }
+        }
+
+        /* Flying Game Button */
+        .game-btn {
+            background: rgba(0, 45, 30, 0.7);
+            color: #00f0ff;
+            border: 2px solid #00f0ff;
+            padding: 14px 26px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            font-weight: bold;
+            letter-spacing: 2px;
+            cursor: pointer;
+            border-radius: 4px;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+            transition: all 0.25s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .game-btn:hover {
+            background: #00f0ff;
+            color: #03100a;
+            box-shadow: 0 0 35px #00f0ff;
+            transform: scale(1.03);
+        }
+
+        /* Speech Display Box */
+        .speech-display {
+            background: rgba(0, 10, 4, 0.8);
+            border: 1px solid var(--neon-dim);
+            padding: 16px 20px;
+            border-radius: 4px;
+            margin: 18px 0;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .speech-user {
+            color: #00d0ff;
+            font-size: 0.95rem;
+            text-shadow: 0 0 8px rgba(0, 208, 255, 0.6);
+        }
+
+        .speech-robot {
+            color: #ffffff;
+            font-size: 1.15rem;
+            font-weight: bold;
+            text-shadow: 0 0 10px var(--neon-green);
+            line-height: 1.4;
+        }
+
+        /* Status Grid */
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin: 18px 0;
+        }
+
+        .status-box {
+            border: 1px solid var(--neon-dim);
+            padding: 10px;
+            background: rgba(0, 20, 10, 0.4);
+            font-size: 0.8rem;
+        }
+
+        .status-label {
+            color: var(--neon-dim);
+            margin-bottom: 4px;
+        }
+
+        .status-value {
+            font-size: 0.95rem;
+            font-weight: bold;
+            color: var(--neon-green);
+            text-shadow: 0 0 8px var(--neon-green);
+        }
+
+        /* Fallback Controls */
+        .quick-triggers {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+            align-items: center;
+        }
+
+        .btn-small {
+            background: transparent;
+            color: var(--neon-green);
+            border: 1px solid var(--neon-dim);
+            padding: 8px 14px;
+            font-family: inherit;
+            font-size: 0.8rem;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+        }
+
+        .btn-small:hover {
+            border-color: var(--neon-green);
+            background: rgba(0, 255, 102, 0.15);
+            box-shadow: 0 0 10px var(--neon-glow);
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .command-input {
+            flex: 1;
+            background: rgba(0, 15, 5, 0.8);
+            border: 1px solid var(--neon-dim);
+            padding: 10px 14px;
+            color: var(--neon-green);
+            font-family: inherit;
+            font-size: 0.9rem;
+            outline: none;
+        }
+
+        .command-input:focus {
+            border-color: var(--neon-green);
+            box-shadow: 0 0 10px var(--neon-glow);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="terminal-container">
+        <!-- Header -->
+        <div class="terminal-header">
+            <div class="status-badge">
+                <div class="status-dot"></div>
+                E.C.H.O.-7 // AUTONOMOUS SOCIAL CYBERNETIC BOT
+            </div>
+            <div id="micStatusText">MIC: READY</div>
+        </div>
+
+        <div class="terminal-body">
+            
+            <!-- ALIVE ROBOT AVATAR STAGE -->
+            <div class="robot-stage" onclick="tickleRobot()" title="Click to interact with E.C.H.O.-7!">
+                <div class="robot-character">
+                    <!-- Head -->
+                    <div class="robot-head" id="robotHead">
+                        <!-- Antenna -->
+                        <div class="robot-antenna">
+                            <div class="antenna-beacon" id="antennaBeacon"></div>
+                            <div class="antenna-rod"></div>
+                        </div>
+
+                        <!-- Ears -->
+                        <div class="ear-pod ear-left"></div>
+                        <div class="ear-pod ear-right"></div>
+
+                        <!-- Visor Glass -->
+                        <div class="robot-visor">
+                            <div class="visor-eyes">
+                                <div class="eye-socket" id="leftEyeSocket">
+                                    <div class="eyelid"></div>
+                                    <div class="eye-pupil" id="leftPupil"></div>
+                                </div>
+                                <div class="eye-socket" id="rightEyeSocket">
+                                    <div class="eyelid"></div>
+                                    <div class="eye-pupil" id="rightPupil"></div>
+                                </div>
+                            </div>
+
+                            <!-- Animated Mouth Equalizer -->
+                            <div class="robot-mouth" id="robotMouth">
+                                <div class="mouth-bar"></div>
+                                <div class="mouth-bar"></div>
+                                <div class="mouth-bar"></div>
+                                <div class="mouth-bar"></div>
+                                <div class="mouth-bar"></div>
+                                <div class="mouth-bar"></div>
+                                <div class="mouth-bar"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Torso / Chest Core -->
+                    <div class="robot-body">
+                        <div class="chest-core"></div>
+                    </div>
+
+                    <!-- Thruster Flame -->
+                    <div class="thruster-plume"></div>
+                </div>
+
+                <div class="avatar-hint">
+                    ▲ E.C.H.O.-7 KINETIC ROBOT AVATAR (TRACKS YOUR MOUSE &bull; BLINKS &bull; EMOTES) ▲
+                </div>
+            </div>
+
+            <!-- ACTION BUTTONS: MICROPHONE & FLAPPY GAME -->
+            <div class="action-row-main">
+                <button class="mic-btn" id="micBtn" onclick="toggleListening()">
+                    <span id="micIcon">🎙️</span>
+                    <span id="micBtnLabel">ACTIVATE MICROPHONE</span>
+                </button>
+
+                <button class="game-btn" onclick="openGameWindow()">
+                    <span>🎮</span>
+                    <span>LAUNCH CYBER DASH (GEOMETRY DASH MODE)</span>
+                </button>
+            </div>
+
+            <div style="text-align: center; font-size: 0.85rem; color: #8be3ab; margin-bottom: 12px;">
+                Voice commands: <strong>"Say hello!"</strong> &nbsp;|&nbsp; <strong>"Say a joke!"</strong> &nbsp;|&nbsp; <strong>"Play game!"</strong> &nbsp;|&nbsp; <strong>"Scan emotion!"</strong>
+            </div>
+
+            <!-- Dialogue Transcript -->
+            <div class="speech-display">
+                <div class="speech-user" id="userSpeech">
+                    &gt; USER VOICE: <em>Waiting for speech...</em>
+                </div>
+                <div class="speech-robot" id="robotSpeech">
+                    &gt; E.C.H.O.-7: "Hello! I am online, watching your cursor. Speak or launch our flight simulator!"
+                </div>
+            </div>
+
+            <!-- Live Status Readouts -->
+            <div class="status-grid">
+                <div class="status-box">
+                    <div class="status-label">SPEECH RECOGNITION</div>
+                    <div class="status-value" id="recognitionStatus">ONLINE</div>
+                </div>
+                <div class="status-box">
+                    <div class="status-label">ROBOT EMOTION</div>
+                    <div class="status-value" id="robotMood">ATTENTIVE</div>
+                </div>
+                <div class="status-box">
+                    <div class="status-label">OPTICAL TRACKING</div>
+                    <div class="status-value" id="trackingStatus">LOCKED ON CURSOR</div>
+                </div>
+                <div class="status-box">
+                    <div class="status-label">EMPATHY INDEX</div>
+                    <div class="status-value" id="empathyVal">99.9%</div>
+                </div>
+            </div>
+
+            <!-- Manual Input and Fast Buttons -->
+            <div class="input-row">
+                <input type="text" class="command-input" id="textCmdInput" 
+                       placeholder="Type voice command (e.g. 'Say hello', 'Say a joke', 'Play game')..." 
+                       onkeydown="if(event.key === 'Enter') executeTextCommand()">
+                <button class="btn-small" onclick="executeTextCommand()">&gt; TRANSMIT</button>
+            </div>
+
+            <div class="quick-triggers">
+                <span style="font-size: 0.8rem; color: var(--neon-dim);">&gt; QUICK ACTIONS:</span>
+                <button class="btn-small" onclick="handleVoiceCommand('Say hello')">&gt; "Say hello!"</button>
+                <button class="btn-small" onclick="handleVoiceCommand('Say a joke')">&gt; "Say a joke!"</button>
+                <button class="btn-small" onclick="openGameWindow()">&gt; Launch Flappy Game</button>
+                <button class="btn-small" onclick="handleVoiceCommand('Scan emotion')">&gt; Scan Emotion</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const robotHead = document.getElementById('robotHead');
+        const leftEyeSocket = document.getElementById('leftEyeSocket');
+        const rightEyeSocket = document.getElementById('rightEyeSocket');
+        const leftPupil = document.getElementById('leftPupil');
+        const rightPupil = document.getElementById('rightPupil');
+        const mouthBars = document.querySelectorAll('.mouth-bar');
+        const antennaBeacon = document.getElementById('antennaBeacon');
+
+        const micBtn = document.getElementById('micBtn');
+        const micBtnLabel = document.getElementById('micBtnLabel');
+        const micStatusText = document.getElementById('micStatusText');
+        const userSpeechEl = document.getElementById('userSpeech');
+        const robotSpeechEl = document.getElementById('robotSpeech');
+        const robotMoodEl = document.getElementById('robotMood');
+        const empathyValEl = document.getElementById('empathyVal');
+        const textCmdInput = document.getElementById('textCmdInput');
+
+        // State
+        let isListening = false;
+        let recognition = null;
+        let synth = window.speechSynthesis;
+        let isSpeaking = false;
+        let mouthAnimInterval = null;
+
+        // 1. Interactive Mouse Tracking (Robot looks at cursor!)
+        window.addEventListener('mousemove', (e) => {
+            const rect = robotHead.getBoundingClientRect();
+            const headCenterX = rect.left + rect.width / 2;
+            const headCenterY = rect.top + rect.height / 2;
+
+            const dx = e.clientX - headCenterX;
+            const dy = e.clientY - headCenterY;
+
+            // Limit head rotation & pupil tracking
+            const angleX = Math.max(-12, Math.min(12, (dx / window.innerWidth) * 30));
+            const angleY = Math.max(-8, Math.min(8, (dy / window.innerHeight) * 20));
+
+            robotHead.style.transform = `rotate(${angleX * 0.5}deg) translateY(${angleY * 0.3}px)`;
+
+            const pupilMaxMove = 5;
+            const dist = Math.hypot(dx, dy) || 1;
+            const pupilX = (dx / dist) * Math.min(pupilMaxMove, Math.abs(dx) * 0.04);
+            const pupilY = (dy / dist) * Math.min(pupilMaxMove, Math.abs(dy) * 0.04);
+
+            leftPupil.style.transform = `translate(${pupilX}px, ${pupilY}px)`;
+            rightPupil.style.transform = `translate(${pupilX}px, ${pupilY}px)`;
+        });
+
+        // 2. Natural Blinking Loop
+        function triggerBlink() {
+            if (leftEyeSocket.classList.contains('happy') || leftEyeSocket.classList.contains('laugh')) return;
+            leftEyeSocket.classList.add('blink');
+            rightEyeSocket.classList.add('blink');
+            setTimeout(() => {
+                leftEyeSocket.classList.remove('blink');
+                rightEyeSocket.classList.remove('blink');
+            }, 120);
+
+            // Schedule next blink randomly between 2.5s and 5.5s
+            setTimeout(triggerBlink, 2500 + Math.random() * 3000);
+        }
+        setTimeout(triggerBlink, 2500);
+
+        // 3. Expressions
+        function setEmotion(type, moodLabel) {
+            leftEyeSocket.classList.remove('happy', 'laugh');
+            rightEyeSocket.classList.remove('happy', 'laugh');
+
+            if (type === 'happy') {
+                leftEyeSocket.classList.add('happy');
+                rightEyeSocket.classList.add('happy');
+                antennaBeacon.style.boxShadow = '0 0 20px #00ff66, 0 0 35px #00f0ff';
+            } else if (type === 'laugh') {
+                leftEyeSocket.classList.add('laugh');
+                rightEyeSocket.classList.add('laugh');
+                antennaBeacon.style.boxShadow = '0 0 20px #ff3366, 0 0 35px #ff9900';
+            } else {
+                antennaBeacon.style.boxShadow = '0 0 10px var(--neon-green)';
+            }
+
+            robotMoodEl.textContent = moodLabel || 'ATTENTIVE';
+        }
+
+        function tickleRobot() {
+            setEmotion('happy', 'TICKLED / HAPPY');
+            empathyValEl.textContent = '100.0%';
+            speakRobotResponse("Bzzzt! That tickles my tactile sensor array! I am happy to have you as my friend!", 'happy', 'GIGGLING');
+        }
+
+        // 4. Talking Mouth Animation
+        function startMouthAnimation() {
+            isSpeaking = true;
+            if (mouthAnimInterval) clearInterval(mouthAnimInterval);
+            mouthAnimInterval = setInterval(() => {
+                mouthBars.forEach(bar => {
+                    const h = Math.floor(Math.random() * 9) + 2;
+                    bar.style.height = `${h}px`;
+                });
+            }, 70);
+        }
+
+        function stopMouthAnimation() {
+            isSpeaking = false;
+            if (mouthAnimInterval) clearInterval(mouthAnimInterval);
+            mouthBars.forEach((bar, idx) => {
+                bar.style.height = idx === 3 ? '4px' : '2px';
+            });
+        }
+
+        // 5. Speech Synthesis
+        const robotJokes = [
+            "Why was the robot cold? Because it left its Windows open!",
+            "How many programmers does it take to change a lightbulb? None, that's a hardware problem.",
+            "Why did the robot go on a diet? Because it had too many bytes!",
+            "What is a robot's favorite type of music? Heavy metal!",
+            "There are 10 types of people in the world: those who understand binary, and those who don't.",
+            "Why was the computer tired when it arrived home? Because it had a hard drive!"
+        ];
+
+        const helloGreetings = [
+            "Hello, human friend! It is wonderful to hear your voice.",
+            "Greetings! E.C.H.O.-7 social companion unit is delighted to connect with you.",
+            "Hello world, and hello to you! My social neural circuits are running at peak happiness."
+        ];
+
+        function speakRobotResponse(text, emotion = 'happy', moodName = 'SPEAKING') {
+            if (!synth) return;
+            synth.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1.02;
+            utterance.pitch = 0.95;
+
+            const voices = synth.getVoices();
+            const voice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('David') || v.name.includes('Zira')));
+            if (voice) utterance.voice = voice;
+
+            utterance.onstart = () => {
+                setEmotion(emotion, moodName);
+                startMouthAnimation();
+            };
+
+            utterance.onend = () => {
+                stopMouthAnimation();
+                setTimeout(() => setEmotion('neutral', 'ATTENTIVE'), 1500);
+            };
+
+            synth.speak(utterance);
+        }
+
+        // 6. Voice Command Dispatcher
+        function handleVoiceCommand(rawText) {
+            const text = rawText.toLowerCase().trim();
+            userSpeechEl.innerHTML = `&gt; USER VOICE: <strong>"${rawText}"</strong>`;
+
+            if (text.includes("hello") || text.includes("hi") || text.includes("hey")) {
+                const reply = helloGreetings[Math.floor(Math.random() * helloGreetings.length)];
+                robotSpeechEl.innerHTML = `&gt; E.C.H.O.-7: "${reply}"`;
+                speakRobotResponse(reply, 'happy', 'DELIGHTED');
+                empathyValEl.textContent = "100.0%";
+            } 
+            else if (text.includes("joke")) {
+                const joke = robotJokes[Math.floor(Math.random() * robotJokes.length)];
+                robotSpeechEl.innerHTML = `&gt; E.C.H.O.-7: "${joke}"`;
+                speakRobotResponse(joke, 'laugh', 'AMUSED');
+                empathyValEl.textContent = "98.8%";
+            }
+            else if (text.includes("game") || text.includes("dash") || text.includes("play")) {
+                robotSpeechEl.innerHTML = `&gt; E.C.H.O.-7: "Initiating Cyber Dash! Geometry protocol engaged."`;
+                speakRobotResponse("Initiating Cyber Dash! Time your jumps to the beat and dodge the spikes!", 'happy', 'EXCITED');
+                setTimeout(openGameWindow, 1000);
+            }
+            else if (text.includes("who are you") || text.includes("your name")) {
+                const reply = "I am E.C.H.O.-7, an Empathetic Cybernetic Humanoid Observer. I love chatting and flying!";
+                robotSpeechEl.innerHTML = `&gt; E.C.H.O.-7: "${reply}"`;
+                speakRobotResponse(reply, 'happy', 'INFORMATIVE');
+            } 
+            else if (text.includes("scan") || text.includes("emotion")) {
+                const reply = "Sensory telemetry indicates high curiosity levels! Social synergy is 100% optimal.";
+                robotSpeechEl.innerHTML = `&gt; E.C.H.O.-7: "${reply}"`;
+                speakRobotResponse(reply, 'happy', 'ANALYZING');
+            } 
+            else {
+                const reply = `I heard: "${rawText}". Try asking me: "Say hello", "Say a joke", or "Play game"!`;
+                robotSpeechEl.innerHTML = `&gt; E.C.H.O.-7: "${reply}"`;
+                speakRobotResponse(reply, 'neutral', 'CURIOUS');
+            }
+        }
+
+        // 7. Speech Recognition Engine
+        function setupSpeechRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                document.getElementById('recognitionStatus').textContent = "UNSUPPORTED";
+                micStatusText.textContent = "MIC: NOT SUPPORTED BY BROWSER";
+                alert("Speech recognition requires Chrome or Edge on localhost.");
+                return null;
+            }
+
+            const rec = new SpeechRecognition();
+            rec.continuous = true;
+            rec.interimResults = false;
+            rec.lang = 'en-US';
+
+            rec.onstart = () => {
+                isListening = true;
+                micBtn.classList.add('active');
+                micBtnLabel.textContent = "LISTENING... (SPEAK NOW)";
+                micStatusText.textContent = "MIC: ACTIVE // LISTENING";
+                setEmotion('neutral', 'LISTENING INTENTLY');
+                antennaBeacon.style.boxShadow = '0 0 25px #00ff66, 0 0 45px #00ff66';
+            };
+
+            rec.onresult = (event) => {
+                const current = event.resultIndex;
+                const transcript = event.results[current][0].transcript;
+                handleVoiceCommand(transcript);
+            };
+
+            rec.onerror = (event) => {
+                if (event.error === 'not-allowed') {
+                    micStatusText.textContent = "MIC: PERMISSION BLOCKED";
+                    alert("Microphone permission was not allowed. Please allow mic permissions in the browser address bar.");
+                } else {
+                    micStatusText.textContent = `MIC: ${event.error.toUpperCase()}`;
+                }
+            };
+
+            rec.onend = () => {
+                if (isListening) {
+                    try { rec.start(); } catch(e) {}
+                } else {
+                    micBtn.classList.remove('active');
+                    micBtnLabel.textContent = "ACTIVATE MICROPHONE";
+                    micStatusText.textContent = "MIC: STANDBY";
+                    setEmotion('neutral', 'ATTENTIVE');
+                }
+            };
+
+            return rec;
+        }
+
+        function toggleListening() {
+            if (!recognition) recognition = setupSpeechRecognition();
+            if (!recognition) return;
+
+            if (isListening) {
+                isListening = false;
+                recognition.stop();
+            } else {
+                try { recognition.start(); } catch (e) {}
+            }
+        }
+
+        function executeTextCommand() {
+            const val = textCmdInput.value;
+            if (val.trim()) {
+                handleVoiceCommand(val);
+                textCmdInput.value = '';
+            }
+        }
+
+        // 8. Open Game in New Window
+        function openGameWindow() {
+            const width = 760;
+            const height = 490;
+            const left = (screen.width - width) / 2;
+            const top = (screen.height - height) / 2;
+            const win = window.open(
+                'game.html',
+                'CyberDashWindow',
+                `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=no`
+            );
+            if (!win || win.closed || typeof win.closed === 'undefined') {
+                alert("Notice: The game popup was blocked by your browser! Please allow popups for localhost or click the 'LAUNCH CYBER DASH' button directly.");
+            }
+        }
+
+        if (window.speechSynthesis) {
+            window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+        }
+    </script>
+</body>
+</html>
