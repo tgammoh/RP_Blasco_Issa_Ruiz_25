@@ -1,124 +1,202 @@
-# Cyber Defender - Robot Programming Assessment
+# The Midnight Gospel: Clancy vs Prince Jam Roll — ROS1 Edition
 
-[![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
-[![Library](https://img.shields.io/badge/library-Pygame-green.svg)](https://www.pygame.org/)
-[![Course](https://img.shields.io/badge/course-Robot%20Programming-orange.svg)](https://www.uc3m.es/)
-[![Institution](https://img.shields.io/badge/university-UC3M-purple.svg)](https://www.uc3m.es/)
+**Robot Programming · Final Assignment, Part I (ROS1 Publisher, Subscriber and Custom Message)**
+Universidad Carlos III de Madrid (UC3M) · Professor: Sofía Die-Pancorbo
+Group: Blasco · Issa · Ruiz
 
-**First Assessment • Robot Programming Course**  
-**Universidad Carlos III de Madrid (UC3M)**  
-**Professor:** Sofía Die-Pancorbo (`sdie@ing.uc3m.es`)  
+The game from the first assignment, rebuilt as **4 independent ROS1 nodes** that talk to each other through **3 topics** and **1 custom message**. One node asks for the player's data, one reads the keyboard, one runs the game, and one shows the final result.
 
 ---
 
-## 📖 1. Project Overview
+## 1. Repository structure (`ROS` branch)
 
-**Cyber Defender** is an arcade 2D space survival and robot defense game written in Python using **Pygame**. 
-
-You control an advanced **Purple Defender Unit** navigating through cosmic hazard fields, neutralizing rogue combat drones, dodging tumbling asteroids, and collecting high-yield energy cores. The game features real-time procedural audio, a particle physics system, smooth 60 FPS animation, dynamic difficulty scaling, and a complete arcade state cycle (Welcome Screen, Active HUD, and Game Over Screen).
-
----
-
-## 🎯 2. Course Assessment Compliance
-
-This project fulfills all 11 technical requirements specified in the official assessment guidelines:
-
-| # | Requirement | Implementation in `game.py` |
-|---|---|---|
-| **1** | **`game.py` in `Game` Branch** | The core application is packaged entirely within `game.py`. |
-| **2** | **Welcome Screen** | Displays an intro screen showing controls, pilot showcase, and a pulsing prompt waiting for player input. |
-| **3** | **Player Control** | Full omnidirectional movement using **Arrow Keys** or **W, A, S, D**, and firing with **Spacebar**. |
-| **4** | **Obstacles or Enemies** | Rogue drones move with sine-wave motion and asteroids tumble downwards automatically. |
-| **5** | **Collisions** | Collision system: losing lives upon contact with hazards, destroying enemies with lasers, and collecting power cores. |
-| **6** | **Score System** | Points awarded for destroying enemies (+100 pts), collecting energy cores (+50 pts), and dodging obstacles (+10 pts). |
-| **7** | **Current Score Display** | Live HUD showing **Score**, **Lives**, **Difficulty Multiplier**, and current **Level**. |
-| **8** | **End Game Screen** | Displays Game Over banner, final score, best record, and options: `[R]` to replay or `[Q]/[ESC]` to exit. |
-| **9** | **Increasing Difficulty** | Level increases every 400 points; enemy speed increases by +18% per level with faster spawn rates; capped at 60 FPS via `pygame.time.Clock()`. |
-| **10** | **Player Visible in Purple** | The player is rendered with a distinct **Purple** cyber-craft design (`PLAYER_PURPLE = (168, 50, 240)`). |
-| **11** | **Consistent Screen Size** | Standardized, fixed window size: **800 x 600 pixels**. |
-
----
-
-## 🕹️ 3. How to Play & Controls
-
-### Controls
-
-| Key | Action |
-|---|---|
-| **`▲` / `W`** | Move Up |
-| **`▼` / `S`** | Move Down |
-| **`◄` / `A`** | Move Left |
-| **`►` / `D`** | Move Right |
-| **`SPACEBAR`** | Fire Twin Lasers (Tap or Hold) |
-| **`R`** (on Game Over) | Restart / Play Again |
-| **`Q` / `ESC`** | Exit Game |
-
-### Scoring Matrix
-
-- **Rogue Drone Destroyed**: `+100 Points`
-- **Asteroid Destroyed**: `+50 Points`
-- **Energy Core Collected**: `+50 Points`
-- **Obstacle Dodged (Leaves Screen)**: `+10 Points`
-
-### Lives & Shield System
-
-- You start with **3 Lives** represented as hearts in the top right HUD.
-- Colliding with an enemy or asteroid consumes 1 life and grants **1.5 seconds of invincibility** (indicated by ship blinking).
-- If all 3 lives are lost, the system initiates the **End Game Screen**.
-
----
-
-## 🚀 4. Installation & Running
-
-### Prerequisites
-
-- **Python 3.10+** (Tested on Python 3.13)
-- **Pygame 2.5+**
-
-### Step-by-Step Setup
-
-1. **Clone the repository and switch to the `Game` branch**:
-   ```bash
-   git clone <YOUR_REPOSITORY_URL>
-   cd <REPOSITORY_FOLDER>
-   git checkout Game
-   ```
-
-2. **Install Pygame**:
-   ```bash
-   pip install pygame
-   ```
-
-3. **Run the Game**:
-   ```bash
-   python game.py
-   ```
-
-> [!NOTE]
-> **No external sound files or asset folders required!**  
-> All retro audio effects (laser chirps, explosions, item pickups, hit sounds, and game over sequences) are generated procedurally in memory via Python's standard `wave` and `math` libraries.
-
----
-
-## 🗂️ 5. Repository Structure
-
-```text
-RP_Surname1_Surname2_Surname3_25/
-├── .gitignore
-├── README.md              # Project documentation and guide
-├── game.py                # Main executable Python game
+```
+ROS branch
+├── game_msgs/                 # Message package
+│   ├── msg/
+│   │   └── GameUserMsg.msg    # Custom message: player data
+│   ├── CMakeLists.txt
+│   └── package.xml
+├── game_pr/                   # Python nodes package
+│   ├── scripts/
+│   │   ├── info_user_node.py      # Asks for and publishes the player data
+│   │   ├── control_node.py        # Reads the keyboard, publishes commands
+│   │   ├── game_node.py           # Main game (Welcome / Game / Final phases)
+│   │   └── results_game_node.py   # Shows the final username and score
+│   ├── CMakeLists.txt
+│   └── package.xml
+└── README.md
 ```
 
-### Git Branch Structure
-- **`main`**: Root production branch.
-- **`Game`**: Contains `game.py` and `README.md` for this assessment.
-- **`ROS`**: Reserved for robotics / ROS integration milestones.
+Both packages go inside the `src/` folder of a catkin workspace (structure **Option 2** of the assignment).
 
 ---
 
-## 👥 6. Academic Information
+## 2. Requirements and dependencies
 
-- **Course:** Robot Programming (Fourth Year)
-- **Institution:** Universidad Carlos III de Madrid (UC3M)
-- **Professor:** Prof. Sofía Die-Pancorbo (`sdie@ing.uc3m.es`)
-- **Group Registration:** Aula Global
+| Requirement | Version |
+|---|---|
+| Ubuntu | 20.04 (native or WSL2) |
+| ROS | ROS1 **Noetic** |
+| Python | 3.8 (included with Ubuntu 20.04) |
+| Pygame | 2.x |
+
+**Install ROS Noetic** (skip if already installed): follow the official guide at <https://wiki.ros.org/noetic/Installation/Ubuntu>, then load it in every terminal:
+
+```bash
+echo "source /opt/ros/noetic/setup.bash" >> ~/.bashrc
+source ~/.bashrc
+```
+
+**Install Pygame:**
+
+```bash
+sudo apt install -y python3-pip
+pip3 install pygame
+```
+
+> **WSL users:** the game window needs WSLg (included in Windows 11). Sound may not work under WSL; the game detects this and keeps running without audio.
+
+---
+
+## 3. Build
+
+```bash
+# 1. Create a workspace (skip if you already have one)
+mkdir -p ~/catkin_ws/src
+
+# 2. Copy (or clone) the two packages into src/
+cd ~/catkin_ws/src
+git clone -b ROS https://github.com/tgammoh/RP_Blasco_Issa_Ruiz_25.git
+cp -r RP_Blasco_Issa_Ruiz_25/game_msgs RP_Blasco_Issa_Ruiz_25/game_pr .
+rm -rf RP_Blasco_Issa_Ruiz_25
+
+# 3. Make the node scripts executable
+chmod +x ~/catkin_ws/src/game_pr/scripts/*.py
+
+# 4. Build and load the workspace
+cd ~/catkin_ws
+catkin_make
+echo "source ~/catkin_ws/devel/setup.bash" >> ~/.bashrc
+source ~/.bashrc
+
+# 5. Check that ROS knows the custom message
+rosmsg show game_msgs/GameUserMsg
+```
+
+The last command should print:
+
+```
+string name
+string username
+int64 age
+```
+
+---
+
+## 4. Run
+
+Open **5 terminals** and start them **in this order**:
+
+| # | Command | What to do |
+|---|---|---|
+| 1 | `roscore` | ROS master — always first |
+| 2 | `rosrun game_pr results_game_node.py` | Shows the final result at the end |
+| 3 | `rosrun game_pr game_node.py` | The game window opens on the welcome screen |
+| 4 | `rosrun game_pr info_user_node.py` | Type your full name, username and age |
+| 5 | `rosrun game_pr control_node.py` | **Keep this terminal selected and play from here** |
+
+### Controls (typed in the `control_node` terminal)
+
+| Key | Command sent | Effect in the game |
+|---|---|---|
+| ↑ ↓ ← → | `UP` `DOWN` `LEFT` `RIGHT` | Move Clancy |
+| Space | `SHOOT` | Fire heart arrows |
+| Enter | `START` | Start the game from the welcome screen |
+| R | `RESTART` | Play again from the end screen |
+| Q / Esc | `QUIT` | End the game (during play) or close it (welcome / end screen) |
+| Ctrl+C | — | Stop the node |
+
+### Gameplay
+
+Dodge **Prince Jam Roll** and the **cosmic asteroids**, shoot them with heart arrows and collect **multiverse shoes**. You have 3 lives.
+
+| Action | Points |
+|---|---|
+| Defeat Prince Jam Roll | +100 |
+| Destroy an asteroid | +50 |
+| Collect a pair of shoes | +50 |
+| Dodge an enemy or asteroid | +10 |
+
+The level rises every 400 points and enemies get faster. Every 20 levels Clancy warps through the Multiverse Simulator into a deeper space sector.
+
+---
+
+## 5. Node-to-node communication
+
+```
+                 /user_information (game_msgs/GameUserMsg)
+ info_user_node ─────────────────────────────┬──────────────────────► game_node
+                                             │                          ▲    │
+                                             └──► results_game_node     │    │
+                                                        ▲               │    │
+                 /keyboard_control (std_msgs/String)    │               │    │
+ control_node ──────────────────────────────────────────┼───────────────┘    │
+                                                        │                    │
+                 /result_information (std_msgs/Int64)   │                    │
+                 ◄──────────────────────────────────────┴────────────────────┘
+```
+
+### Topics
+
+| Topic | Message type | Publisher | Subscribers |
+|---|---|---|---|
+| `/user_information` | `game_msgs/GameUserMsg` | `info_user_node` | `game_node`, `result_game_node` |
+| `/keyboard_control` | `std_msgs/String` | `control_node` | `game_node` |
+| `/result_information` | `std_msgs/Int64` | `game_node` | `result_game_node` |
+
+### Custom message — `game_msgs/GameUserMsg`
+
+```
+string name
+string username
+int64 age
+```
+
+### Nodes
+
+**`info_user_node`** (`info_user_node.py`)
+Asks for the full name, username and age in the terminal and validates them (letters only for the name, 3–20 letters/numbers/`_` for the username, age 1–120). The data is stored inside the node's class and published once on `/user_information`. The publisher is *latched*, so nodes that start later still receive the data.
+
+**`control_node`** (`control_node.py`)
+Only handles keyboard input. It reads keys directly from its terminal (no Enter needed) and publishes one capital-letter command per key press on `/keyboard_control`.
+
+**`game_node`** (`game_node.py`) — main node, split into three phase methods:
+1. `welcome_phase()` — receives the player data, stores it in the class and greets the player by name. Waits for `START`.
+2. `game_phase()` — runs the game and moves Clancy according to the commands received from `control_node`.
+3. `final_phase()` — detects the end of the game, calculates the final score and publishes it on `/result_information`. Offers `RESTART` or `QUIT`.
+
+It logs every phase change: `"Welcome phase started."`, `"Game phase started."`, `"Final phase reached, calculating score."`
+
+**`result_game_node`** (`results_game_node.py`)
+Subscribes to `/user_information` and `/result_information` and prints a final message with the player's username and score. The two messages can arrive in any order.
+
+### Useful commands to inspect the system
+
+```bash
+rosnode list                         # the 4 running nodes
+rostopic list                        # the 3 topics
+rostopic echo /keyboard_control      # watch the commands live
+rostopic echo /user_information      # watch the player data
+rostopic echo /result_information    # watch the final score
+rqt_graph                            # draw the node/topic graph
+```
+
+---
+
+## 6. Design notes
+
+- **Every node is a class in its own file**, and nothing uses global variables: publishers, subscribers, player data, score and state all live inside each class.
+- **Thread safety:** ROS callbacks run in a separate thread from the Pygame loop, so `game_node` puts incoming commands in a thread-safe queue and reads them once per frame.
+- **Smooth movement from discrete commands:** each movement command keeps Clancy moving for a few frames. Holding an arrow key makes the terminal repeat the command, so the movement continues while the key is held.
+- **Logging:** every node uses `rospy.loginfo` to report what it is doing.
