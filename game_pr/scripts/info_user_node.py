@@ -35,16 +35,16 @@ class InfoUserNode:
             if len(words) >= 1 and all (w.replace("-", "").replace("'", "").isalpha() for w in words):
                 return " ".join(words)
 
-            print(" Invalid name. Use letters only, with optional hyphens or spaces).")
+            print(" Invalid name. Use letters only, with optional hyphens or spaces.")
 
     def ask_username(self):
         
         while not rospy.is_shutdown():
 
-            username = input("enter your username: ").strip()
+            username = input("Enter your username: ").strip()
             if re.fullmatch(r"\w{3,20}", username):
                 return username
-            print(" Invalid username, use 3-20 letters, numbers or _ (no spaces).)")
+            print(" Invalid username, use 3-20 letters, numbers or _ (no spaces).")
 
     def ask_age(self):
 

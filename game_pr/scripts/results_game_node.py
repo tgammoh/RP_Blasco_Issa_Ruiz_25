@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 RESULTS_GAME_NODE
-Subsribes to /user_information (GameUserMsg) and /result_information (std_msgs/Int64)
+Subscribes to /user_information (GameUserMsg) and /result_information (std_msgs/Int64)
 and shows a final message with username and score.
 
 """
@@ -30,14 +30,14 @@ class ResultsGameNode:
     def user_callback(self, msg):
         self.username = msg.username 
         self.age = msg.age 
-        rospy.loginfo("Player information recieved: username=%s, age=%d", self.username, self.age)
+        rospy.loginfo("Player information received: username=%s, age=%d", self.username, self.age)
         self.show_result()
 
 
     def score_callback(self, msg):
 
         self.final_score = msg.data
-        rospy.loginfo("Final score recieved: %d", self.final_score)
+        rospy.loginfo("Final score received: %d", self.final_score)
         self.show_result()
 
     def show_result(self):

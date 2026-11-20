@@ -42,7 +42,7 @@ class ControlNode:
         rospy.loginfo("control_node started. Publishing commands on /keyboard_control")
 
     def get_key(self, timeout=0.1):
-        """ return the key pressed, or '' if no keey was pressed within timeout seconds"""
+        """ return the key pressed, or '' if no key was pressed within timeout seconds"""
         ready, _, _ = select.select([self.fd], [], [], timeout)
         if not ready:
             return ''
