@@ -1188,6 +1188,12 @@ class Game:
                     if event.type == pygame.KEYDOWN:
                         if event.key == pygame.K_ESCAPE:
                             self.state = STATE_GAMEOVER
+                        elif event.key == pygame.K_r:
+                            # R during play: restart immediately
+                            self.reset_game()
+                        elif event.key == pygame.K_q:
+                            # Q during play: quit immediately
+                            running = False
                         elif event.key == pygame.K_SPACE:
                             if not self.simulator.active:
                                 self.player.shoot(self.arrows, self.sound_mgr)
